@@ -252,7 +252,89 @@ main[1] print l
 ```
 
 it printed the modulus, 31, which was the instance variable value, not one of the local variables.
- 
+
 ## Other Commands Supported
 
 So far, we have seen examples of `locals`, `cont` and `print`.  There are also `list`, `where`, `next` and `step` which we'll see examples of in this section.
+
+### The `where` Command
+
+This shows the stack trace.
+
+```
+me@my-computerName:~/projects/command_line_debugging_example$ jdb -classpath . -sourcepath . com.modulo.MainClass 13 5 7 multiply
+Initializing jdb ...
+> stop at com.modulo.multiplication.ModuloMultiplier:23
+Deferring breakpoint com.modulo.multiplication.ModuloMultiplier:23.
+It will be set after the class is loaded.
+> run
+run com.modulo.MainClass 13 5 7 multiply
+Set uncaught java.lang.Throwable
+Set deferred uncaught java.lang.Throwable
+> 
+VM Started: Set deferred breakpoint com.modulo.multiplication.ModuloMultiplier:23
+
+Breakpoint hit: "thread=main", com.modulo.multiplication.ModuloMultiplier.recursiveMultiply(), line=23 bci=6
+23                return 0L;
+
+main[1] where
+  [1] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:23)
+  [2] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:27)
+  [3] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:29)
+  [4] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:29)
+  [5] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:27)
+  [6] com.modulo.multiplication.ModuloMultiplier.multiply (ModuloMultiplier.java:19)
+  [7] com.modulo.MainClass.main (MainClass.java:16)
+main[1] cont
+> 2
+
+The application exited
+```
+
+Here, I'll annotate it so it makes more visual sense:
+
+```
+me@my-computerName:~/projects/command_line_debugging_example$ jdb -classpath . -sourcepath . com.modulo.MainClass 13 5 7 multiply
+Initializing jdb ...
+> stop at com.modulo.multiplication.ModuloMultiplier:23
+Deferring breakpoint com.modulo.multiplication.ModuloMultiplier:23.
+It will be set after the class is loaded.
+> run
+run com.modulo.MainClass 13 5 7 multiply
+Set uncaught java.lang.Throwable
+Set deferred uncaught java.lang.Throwable
+> 
+VM Started: Set deferred breakpoint com.modulo.multiplication.ModuloMultiplier:23
+
+Breakpoint hit: "thread=main", com.modulo.multiplication.ModuloMultiplier.recursiveMultiply(), line=23 bci=6
+23                return 0L;
+
+main[1] where
+  [1] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:23)  ********************** Multiplying by 0
+  [2] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:27)  ********************** Multiplying by 1
+  [3] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:29)  ********************** Multiplying by 2
+  [4] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:29)  ********************** Multiplying by 4
+  [5] com.modulo.multiplication.ModuloMultiplier.recursiveMultiply (ModuloMultiplier.java:27)  ********************** Multiplying by 5
+  [6] com.modulo.multiplication.ModuloMultiplier.multiply (ModuloMultiplier.java:19)
+  [7] com.modulo.MainClass.main (MainClass.java:16)
+main[1] cont
+> 2
+
+The application exited
+```
+
+It has exactly 5 recursive calls because of the reasoning that 5 is odd so subtract 1 and then 4 is even so divide by 2 then 2 is even so divide by 2 then 1 is odd so subtract 1 then 0 is the recursive base case.
+
+### The `next` and `step` Commands
+
+In a nutshell, these are the commands that stop execution at a particular line even though you didn't set a breakpoint there.  And then you have to remember which one you want or you'll either be stepping into something you wanted to skip over or skipping over something you wanted to step into.  They're presented here for completeness.  But, in my opinion, this has never been a good feature of debuggers.  Regardless of if they're the visual ones in the IDE or the command line ones.
+
+Here's a `step` example:
+
+And here's a `next` example:
+
+And here's an example where, when it stops at a breakpoint, you set an additional one and just `cont` to it ... a much more controlled way of doing things:
+
+## An Exercise For The Reader
+
+Add similar breakpoints in the ModuloExponentiator.java.  You'll want to follow along with a calculator while you're going through it, doing each of the modular multiplications and squarings in turn.
