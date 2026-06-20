@@ -331,10 +331,207 @@ In a nutshell, these are the commands that stop execution at a particular line e
 
 Here's a `step` example:
 
+```
+me@my-computerName:~/projects/command_line_debugging_example$ jdb -classpath . -sourcepath . com.modulo.MainClass 13 5 7 multiply
+Initializing jdb ...
+> stop at com.modulo.MainClass:8                               
+Deferring breakpoint com.modulo.MainClass:8.
+It will be set after the class is loaded.
+> run
+run com.modulo.MainClass 13 5 7 multiply
+Set uncaught java.lang.Throwable
+Set deferred uncaught java.lang.Throwable
+> 
+VM Started: Set deferred breakpoint com.modulo.MainClass:8
+
+Breakpoint hit: "thread=main", com.modulo.MainClass.main(), line=8 bci=0
+8            long a = Long.parseLong(args[0]);
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=9 bci=7
+9            long b = Long.parseLong(args[1]);
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=10 bci=14
+10            long n = Long.parseLong(args[2]);
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=11 bci=22
+11            if("power".equals(args[3])) {
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=14 bci=60
+14            } else if("multiply".equals(args[3])){
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=15 bci=71
+15                ModuloMultiplier mmult = new ModuloMultiplier(n);
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.multiplication.ModuloMultiplier.<init>(), line=6 bci=0
+6        public ModuloMultiplier(long q) {
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.multiplication.ModuloMultiplier.<init>(), line=7 bci=4
+7            l = q;
+
+main[1] step
+> 
+Step completed: "thread=main", com.modulo.multiplication.ModuloMultiplier.<init>(), line=8 bci=9
+8        }
+
+main[1] cont
+> 2
+
+The application exited
+```
+
+As you can see from that example, I keep stepping and it starts to go into the logic for the ModuloMultiplier.  You can imagine that if that were a session where I wanted to skip past that to the point where it is executing the System.out.println of the result, it would be theoretically rather frustrating if I didn't remember that the command that I want is `next` instead of `step`.
+
 And here's a `next` example:
 
+```
+me@my-computerName:~/projects/command_line_debugging_example$ jdb -classpath . -sourcepath . com.modulo.MainClass 13 5 7 multiply
+Initializing jdb ...
+> stop at com.modulo.MainClass:8
+Deferring breakpoint com.modulo.MainClass:8.
+It will be set after the class is loaded.
+> run
+run com.modulo.MainClass 13 5 7 multiply
+Set uncaught java.lang.Throwable
+Set deferred uncaught java.lang.Throwable
+> 
+VM Started: Set deferred breakpoint com.modulo.MainClass:8
+
+Breakpoint hit: "thread=main", com.modulo.MainClass.main(), line=8 bci=0
+8            long a = Long.parseLong(args[0]);
+
+main[1] next
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=9 bci=7
+9            long b = Long.parseLong(args[1]);
+
+main[1] next
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=10 bci=14
+10            long n = Long.parseLong(args[2]);
+
+main[1] next
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=11 bci=22
+11            if("power".equals(args[3])) {
+
+main[1] next
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=14 bci=60
+14            } else if("multiply".equals(args[3])){
+
+main[1] next
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=15 bci=71
+15                ModuloMultiplier mmult = new ModuloMultiplier(n);
+
+main[1] next
+> 
+Step completed: "thread=main", com.modulo.MainClass.main(), line=16 bci=82
+16                System.out.println(mmult.multiply(a, b));
+
+main[1] next
+> 2
+
+Step completed: "thread=main", com.modulo.MainClass.main(), line=18 bci=95
+18        }
+
+main[1] cont
+> 
+The application exited
+```
+
+Looks much better, right?  Not really because it has the opposite problem.  If this were a theoretical scenario (which hasn't always been theoretical for me) where I actually wanted it to step into the modular multiplication logic, I would have had to remember that it is the `step` command, not the `next`.  And that's the real conundrum.  At every step or next, you have to remember whether you want a step or a next.
+
 And here's an example where, when it stops at a breakpoint, you set an additional one and just `cont` to it ... a much more controlled way of doing things:
+
+```
+me@my-computerName:~/projects/command_line_debugging_example$ jdb -classpath . -sourcepath . com.modulo.MainClass -1 5 7 multiply
+Initializing jdb ...
+> stop at com.modulo.MainClass:8
+Deferring breakpoint com.modulo.MainClass:8.
+It will be set after the class is loaded.
+> run
+run com.modulo.MainClass -1 5 7 multiply
+Set uncaught java.lang.Throwable
+Set deferred uncaught java.lang.Throwable
+> 
+VM Started: Set deferred breakpoint com.modulo.MainClass:8
+
+Breakpoint hit: "thread=main", com.modulo.MainClass.main(), line=8 bci=0
+8            long a = Long.parseLong(args[0]);
+
+main[1] stop at com.modulo.multiplication.ModuloMultiplier:13 
+Deferring breakpoint com.modulo.multiplication.ModuloMultiplier:13.
+It will be set after the class is loaded.
+main[1] cont
+> Set deferred breakpoint com.modulo.multiplication.ModuloMultiplier:13
+
+Breakpoint hit: "thread=main", com.modulo.multiplication.ModuloMultiplier.multiply(), line=13 bci=13
+13                a += l;
+
+main[1] cont
+> 2
+
+The application exited
+```
+
+Here, the debugging is much more intuitive.  I stop at a line, then realize that I need to stop somewhere else while I'm stopped there and just dynamically add another breakpoint for it and `cont` until it.  All the guesswork of "Do I `step` or do I `next` at this line?" is neatly eliminated!
+
+### The `list` Command
+
+Finally, to round it all out, here is an example of the `list` command.
+
+```
+me@my-computerName:~/projects/command_line_debugging_example$ jdb -classpath . -sourcepath . com.modulo.MainClass -1 5 7 multiply
+Initializing jdb ...
+> stop at com.modulo.MainClass:8
+Deferring breakpoint com.modulo.MainClass:8.
+It will be set after the class is loaded.
+> run
+run com.modulo.MainClass -1 5 7 multiply
+Set uncaught java.lang.Throwable
+Set deferred uncaught java.lang.Throwable
+> 
+VM Started: Set deferred breakpoint com.modulo.MainClass:8
+
+Breakpoint hit: "thread=main", com.modulo.MainClass.main(), line=8 bci=0
+8            long a = Long.parseLong(args[0]);
+
+main[1] list
+4    import com.modulo.multiplication.ModuloMultiplier;
+5    
+6    public class MainClass {
+7        public static void main(String[] args) {
+8 =>         long a = Long.parseLong(args[0]);
+9            long b = Long.parseLong(args[1]);
+10            long n = Long.parseLong(args[2]);
+11            if("power".equals(args[3])) {
+12                ModuloExponentiator mex = new ModuloExponentiator(n);
+13                System.out.println(mex.power(a, b));
+main[1] cont
+> 2
+
+The application exited
+```
+
+This shows the lines of surrounding context.  Not bad!  I happened not to need it at the beginning of this session because I happened to have the source also open in a text editor and could just scroll the cursor to the stopped at line.
 
 ## An Exercise For The Reader
 
 Add similar breakpoints in the ModuloExponentiator.java.  You'll want to follow along with a calculator while you're going through it, doing each of the modular multiplications and squarings in turn.
+
+Also, check out the official documentation at https://docs.oracle.com/en/java/javase/21/docs/specs/man/jdb.html
