@@ -8,17 +8,16 @@ The command is `jdb` and, in order to give you an idea of what it can do, I'll s
 
 ## List of JDB Commands Covered
 
-| Command              | Meaning                                                      |
-|----------------------|--------------------------------------------------------------|
-| `list`               | `Shows nearby source lines`                                  |
-| `locals`             | `Shows local variables`                                      |
-| `print` <expression> | `Evaluate and display the expression`                        |
-| `where`              | `Show the current stack trace`                               |
-| `next`               | `Execute the next line without entering the called methods`  |
-| `step`               | `Execute the next line, entering the called methods`         |
-| `cont`               | `Continue until the next breakpoint or program termination.` |
-
-Entries are saved as a simple JSON file in your home directory.
+| Command                                           | Meaning                                                                    |
+|---------------------------------------------------|----------------------------------------------------------------------------|
+| `list`                                            | `Shows nearby source lines`                                                |
+| `locals`                                          | `Shows local variables`                                                    |
+| `print` <expression>                              | `Evaluate and display the expression`                                      |
+| `where`                                           | `Show the current stack trace`                                             |
+| `next`                                            | `Execute the next line without entering the called methods`                |
+| `step`                                            | `Execute the next line, entering the called methods`                       |
+| `cont`                                            | `Continue until the next breakpoint or program termination.`               |
+| `stop at `<package>`.`<ClassName>`:`<line number> | `Actually sets a break point in the program at the specified line number.` |
 
 ## A Live Debugging Session
 
@@ -135,7 +134,6 @@ The application exited
 Believe it or not, this is actually showing the return values being assigned to the x values.  To see why I'm saying this, here is the same session again.  But this time, where I have annotated the x assignments with markers correlating them to the previous return values (jdb doesn't offer this kind of annotation, BTW, I just put it in there for clarity):
 
 ```
-me@my-computerName:~/projects/command_line_debugging_example$ javac -g com/modulo/MainClass.java
 me@my-computerName:~/projects/command_line_debugging_example$ jdb -classpath . -sourcepath . com.modulo.MainClass 5 7 31 multiply
 Initializing jdb ...
 > stop at com.modulo.multiplication.ModuloMultiplier:23
@@ -489,7 +487,7 @@ main[1] cont
 The application exited
 ```
 
-Here, the debugging is much more intuitive.  I stop at a line, then realize that I need to stop somewhere else while I'm stopped there and just dynamically add another breakpoint for it and `cont` until it.  All the guesswork of "Do I `step` or do I `next` at this line?" is neatly eliminated!
+Here, the debugging is much more intuitive.  I stop at a line, then realize that I need to stop in the negative normalization path also while I'm stopped where I currently am and just dynamically add another breakpoint for it and `cont` until it.  All the guesswork of "Do I `step` or do I `next` at this line?" is neatly eliminated!
 
 ### The `list` Command
 
