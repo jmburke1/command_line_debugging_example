@@ -1,3 +1,7 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 Jason Burke
+ */
 package com.modulo;
 
 import com.modulo.exponentiation.ModuloExponentiator;
