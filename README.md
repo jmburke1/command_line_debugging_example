@@ -533,3 +533,16 @@ This shows the lines of surrounding context.  Not bad!  I happened not to need i
 Add similar breakpoints in the ModuloExponentiator.java.  You'll want to follow along with a calculator while you're going through it, doing each of the modular multiplications and squarings in turn.
 
 Also, check out the official documentation at https://docs.oracle.com/en/java/javase/21/docs/specs/man/jdb.html
+
+## Debugging Markers Appear To Be Enabled In A Gradle Build
+
+Remember in the sections above when I said that the -g option gives you the ability to see the values of the local variables with `locals` commands when compiling just with javac?  Gradle (or, at least the gradlew wrapper 8.14.5) makes that irrelevant.  Instead, the default behavior appears to give full command line debugging capability out-of-the-box.  If you're curious to see what it looks like when certain capabilities are disabled, start by putting the following in your build.gradle as a template you can work from:
+
+```
+tasks.withType(JavaCompile).configureEach {
+    options.debug = true
+    options.debugOptions.debugLevel = "source,lines,vars"
+}
+```
+
+which is the default behavior out-of-the-box anyway.  Then start taking away some of the abilities from the above and clean and build accordingly. 

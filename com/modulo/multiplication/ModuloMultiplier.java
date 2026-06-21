@@ -1,8 +1,4 @@
-/*
- * SPDX-License-Identifier: MIT
- * Copyright (c) 2026 Jason Burke
- */
-package com.modulo.multiplication;
+package com.modulo.multiplication; //SPDX-License-Identifier: MIT    Copyright (c) 2026 Jason Burke
 
 public class ModuloMultiplier {
     private final long l;
