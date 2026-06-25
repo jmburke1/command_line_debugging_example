@@ -534,7 +534,9 @@ Add similar breakpoints in the ModuloExponentiator.java.  You'll want to follow 
 
 Also, check out the official documentation at https://docs.oracle.com/en/java/javase/21/docs/specs/man/jdb.html
 
-## Debugging Markers Appear To Be Enabled In A Gradle Build
+## Debugging Unit Tests In Gradle
+
+### Debugging Markers Appear To Be Enabled In A Gradle Build
 
 Remember in the sections above when I said that the -g option gives you the ability to see the values of the local variables with `locals` commands when compiling just with javac?  Gradle (or, at least the gradlew wrapper 8.14.5) makes that irrelevant.  Instead, the default behavior appears to give full command line debugging capability out-of-the-box.  If you're curious to see what it looks like when certain capabilities are disabled, start by putting the following in your build.gradle as a template you can work from:
 
@@ -545,4 +547,192 @@ tasks.withType(JavaCompile).configureEach {
 }
 ```
 
-which is the default behavior out-of-the-box anyway.  Then start taking away some of the abilities from the above and clean and build accordingly. 
+which is the default behavior out-of-the-box anyway.  Then start taking away some of the abilities from the above and clean and build accordingly.
+
+### Attaching A Debugger To A Gradle Run Of A Unit Test
+
+Here, I'll show the example of attaching a gradle debugger to one of the unit tests in promptsanitizer, since that is another open-source project in one of my repos.  If you're debugging a test, you should probably focus on just one test.  So, I'll be demonstrating it with the `--tests argument`.  I started off by doing this:
+
+`me@my-computerName:~/projects/promptsanitizer$ ./gradlew test --debug-jvm --tests 'promptsanitizer.batchjob.MergeUtilTest'`
+
+However, one tricky thing about this is that, if you already ran the test, then it will be in Gradle's execution history.  So, in that case you'll also want the `--rerun` argument.
+
+`me@my-computerName:~/projects/promptsanitizer$ ./gradlew test --rerun --debug-jvm --tests 'promptsanitizer.batchjob.MergeUtilTest'`
+
+The output will be paused, and you'll actually have to open another terminal window to continue.  The output will look something like this:
+
+```
+> Task :test
+Listening for transport dt_socket at address: 5005
+```
+
+Here, in this example, I opened another terminal window and attached a debugger with the command `jdb -sourcepath ./src/test/java:./src/main/java -attach localhost:5005`.  Then, I executed some of the commands we have seen in sections above just to demonstrate that it looks exactly the same when you're debugging a gradle run of a unit test.  Here is the complete breakdown of that:
+
+```
+me@my-computerName:~/projects/promptsanitizer$ jdb -sourcepath ./src/test/java:./src/main/java -attach localhost:5005
+Set uncaught java.lang.Throwable
+Set deferred uncaught java.lang.Throwable
+Initializing jdb ...
+
+VM Started: > No frames on the current call stack
+
+main[1] stop at promptsanitizer.batchjob.MergeUtil:13
+Deferring breakpoint promptsanitizer.batchjob.MergeUtil:13.
+It will be set after the class is loaded.
+main[1] run
+> Set deferred breakpoint promptsanitizer.batchjob.MergeUtil:13
+
+Breakpoint hit: "thread=Test worker", promptsanitizer.batchjob.MergeUtil.removeIfHas(), line=13 bci=14
+13                return true;
+
+Test worker[1] locals
+Method arguments:
+checkIfHasKey = instance of org.json.JSONObject(id=2797)
+key = "key2"
+Local variables:
+Test worker[1] where
+  [1] promptsanitizer.batchjob.MergeUtil.removeIfHas (MergeUtil.java:13)
+  [2] promptsanitizer.batchjob.MergeUtilTest.removeIfHasShouldReturnTrueIfWasThereToRemove (MergeUtilTest.java:19)
+  [3] java.lang.invoke.LambdaForm$DMH/0x00007ce188144000.invokeVirtual (null)
+  [4] java.lang.invoke.LambdaForm$MH/0x00007ce18809c800.invoke (null)
+  [5] java.lang.invoke.Invokers$Holder.invokeExact_MT (null)
+  [6] jdk.internal.reflect.DirectMethodHandleAccessor.invokeImpl (DirectMethodHandleAccessor.java:153)
+  [7] jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:103)
+  [8] java.lang.reflect.Method.invoke (Method.java:580)
+  [9] org.junit.platform.commons.util.ReflectionUtils.invokeMethod (ReflectionUtils.java:728)
+  [10] org.junit.jupiter.engine.execution.MethodInvocation.proceed (MethodInvocation.java:60)
+  [11] org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed (InvocationInterceptorChain.java:131)
+  [12] org.junit.jupiter.engine.extension.TimeoutExtension.intercept (TimeoutExtension.java:156)
+  [13] org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod (TimeoutExtension.java:147)
+  [14] org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod (TimeoutExtension.java:86)
+  [15] org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor$$Lambda/0x00007ce188110a78.apply (null)
+  [16] org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0 (InterceptingExecutableInvoker.java:103)
+  [17] org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall$$Lambda/0x00007ce188110e98.apply (null)
+  [18] org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0 (InterceptingExecutableInvoker.java:93)
+  [19] org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$$Lambda/0x00007ce18813b970.apply (null)
+  [20] org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed (InvocationInterceptorChain.java:106)
+  [21] org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed (InvocationInterceptorChain.java:64)
+  [22] org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke (InvocationInterceptorChain.java:45)
+  [23] org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke (InvocationInterceptorChain.java:37)
+  [24] org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke (InterceptingExecutableInvoker.java:92)
+  [25] org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke (InterceptingExecutableInvoker.java:86)
+  [26] org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$7 (TestMethodTestDescriptor.java:218)
+  [27] org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor$$Lambda/0x00007ce188141c70.execute (null)
+  [28] org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute (ThrowableCollector.java:73)
+  [29] org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod (TestMethodTestDescriptor.java:214)
+  [30] org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute (TestMethodTestDescriptor.java:139)
+  [31] org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute (TestMethodTestDescriptor.java:69)
+  [32] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6 (NodeTestTask.java:156)
+  [33] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812dab8.execute (null)
+  [34] org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute (ThrowableCollector.java:73)
+  [35] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8 (NodeTestTask.java:146)
+  [36] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812d890.invoke (null)
+  [37] org.junit.platform.engine.support.hierarchical.Node.around (Node.java:137)
+  [38] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9 (NodeTestTask.java:144)
+  [39] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812d468.execute (null)
+  [40] org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute (ThrowableCollector.java:73)
+  [41] org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively (NodeTestTask.java:143)
+  [42] org.junit.platform.engine.support.hierarchical.NodeTestTask.execute (NodeTestTask.java:100)
+  [43] org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService$$Lambda/0x00007ce18812c400.accept (null)
+  [44] java.util.ArrayList.forEach (ArrayList.java:1,596)
+  [45] org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll (SameThreadHierarchicalTestExecutorService.java:41)
+  [46] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6 (NodeTestTask.java:160)
+  [47] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812dab8.execute (null)
+  [48] org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute (ThrowableCollector.java:73)
+  [49] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8 (NodeTestTask.java:146)
+  [50] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812d890.invoke (null)
+  [51] org.junit.platform.engine.support.hierarchical.Node.around (Node.java:137)
+  [52] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9 (NodeTestTask.java:144)
+  [53] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812d468.execute (null)
+  [54] org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute (ThrowableCollector.java:73)
+  [55] org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively (NodeTestTask.java:143)
+  [56] org.junit.platform.engine.support.hierarchical.NodeTestTask.execute (NodeTestTask.java:100)
+  [57] org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService$$Lambda/0x00007ce18812c400.accept (null)
+  [58] java.util.ArrayList.forEach (ArrayList.java:1,596)
+  [59] org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll (SameThreadHierarchicalTestExecutorService.java:41)
+  [60] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6 (NodeTestTask.java:160)
+  [61] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812dab8.execute (null)
+  [62] org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute (ThrowableCollector.java:73)
+  [63] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8 (NodeTestTask.java:146)
+  [64] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812d890.invoke (null)
+  [65] org.junit.platform.engine.support.hierarchical.Node.around (Node.java:137)
+  [66] org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9 (NodeTestTask.java:144)
+  [67] org.junit.platform.engine.support.hierarchical.NodeTestTask$$Lambda/0x00007ce18812d468.execute (null)
+  [68] org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute (ThrowableCollector.java:73)
+  [69] org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively (NodeTestTask.java:143)
+  [70] org.junit.platform.engine.support.hierarchical.NodeTestTask.execute (NodeTestTask.java:100)
+  [71] org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit (SameThreadHierarchicalTestExecutorService.java:35)
+  [72] org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute (HierarchicalTestExecutor.java:57)
+  [73] org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute (HierarchicalTestEngine.java:54)
+  [74] org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute (EngineExecutionOrchestrator.java:198)
+  [75] org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute (EngineExecutionOrchestrator.java:169)
+  [76] org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute (EngineExecutionOrchestrator.java:93)
+  [77] org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0 (EngineExecutionOrchestrator.java:58)
+  [78] org.junit.platform.launcher.core.EngineExecutionOrchestrator$$Lambda/0x00007ce18811e9e8.accept (null)
+  [79] org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams (EngineExecutionOrchestrator.java:141)
+  [80] org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute (EngineExecutionOrchestrator.java:57)
+  [81] org.junit.platform.launcher.core.DefaultLauncher.execute (DefaultLauncher.java:103)
+  [82] org.junit.platform.launcher.core.DefaultLauncher.execute (DefaultLauncher.java:85)
+  [83] org.junit.platform.launcher.core.DelegatingLauncher.execute (DelegatingLauncher.java:47)
+  [84] org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.processAllTestClasses (JUnitPlatformTestClassProcessor.java:124)
+  [85] org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.access$000 (JUnitPlatformTestClassProcessor.java:99)
+  [86] org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor.stop (JUnitPlatformTestClassProcessor.java:94)
+  [87] org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.stop (SuiteTestClassProcessor.java:63)
+  [88] java.lang.invoke.LambdaForm$DMH/0x00007ce18809c000.invokeInterface (null)
+  [89] java.lang.invoke.LambdaForm$MH/0x00007ce18809c800.invoke (null)
+  [90] java.lang.invoke.Invokers$Holder.invokeExact_MT (null)
+  [91] jdk.internal.reflect.DirectMethodHandleAccessor.invokeImpl (DirectMethodHandleAccessor.java:153)
+  [92] jdk.internal.reflect.DirectMethodHandleAccessor.invoke (DirectMethodHandleAccessor.java:103)
+  [93] java.lang.reflect.Method.invoke (Method.java:580)
+  [94] org.gradle.internal.dispatch.ReflectionDispatch.dispatch (ReflectionDispatch.java:36)
+  [95] org.gradle.internal.dispatch.ReflectionDispatch.dispatch (ReflectionDispatch.java:24)
+  [96] org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch (ContextClassLoaderDispatch.java:33)
+  [97] org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke (ProxyDispatchAdapter.java:92)
+  [98] jdk.proxy1.$Proxy4.stop (null)
+  [99] org.gradle.api.internal.tasks.testing.worker.TestWorker$3.run (TestWorker.java:200)
+  [100] org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName (TestWorker.java:132)
+  [101] org.gradle.api.internal.tasks.testing.worker.TestWorker.execute (TestWorker.java:103)
+  [102] org.gradle.api.internal.tasks.testing.worker.TestWorker.execute (TestWorker.java:63)
+  [103] org.gradle.process.internal.worker.child.ActionExecutionWorker.execute (ActionExecutionWorker.java:56)
+  [104] org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call (SystemApplicationClassLoaderWorker.java:122)
+  [105] org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call (SystemApplicationClassLoaderWorker.java:72)
+  [106] worker.org.gradle.process.internal.worker.GradleWorkerMain.run (GradleWorkerMain.java:69)
+  [107] worker.org.gradle.process.internal.worker.GradleWorkerMain.main (GradleWorkerMain.java:74)
+Test worker[1] list
+9    public class MergeUtil {
+10        static boolean removeIfHas(JSONObject checkIfHasKey, String key) {
+11            if(checkIfHasKey.has(key)) {
+12                checkIfHasKey.remove(key);
+13 =>             return true;
+14            }
+15            return false;
+16        }
+17        static boolean putIfNotHasOrDifferent(JSONObject checkIfHasKey, String key, Object putThisThere) {
+18            if(checkIfHasKey.has(key)) {
+Test worker[1] cont
+> 
+The application exited
+me@my-computerName:~/projects/promptsanitizer$
+```
+
+And finally, back in the first terminal window, the output will complete with this:
+
+```
+BUILD SUCCESSFUL in 3m 1s
+5 actionable tasks: 1 executed, 4 up-to-date
+me@my-computerName:~/projects/promptsanitizer$ 
+```
+
+Just for completeness, the reason that the locals showed a method argument of `key` being equal to `"key2"` is because of the actual code in that unit test (at the time of this writing):
+
+```
+    @Test
+    void removeIfHasShouldReturnTrueIfWasThereToRemove() {
+        JSONObject jo = new JSONObject("{\"key1\": \"value1\", \"key2\": \"value2\"}");
+        assertTrue(MergeUtil.removeIfHas(jo, "key2"));
+        assertEquals("value1", jo.getString("key1"));
+        assertFalse(jo.has("key2"));
+    }
+```
+
+This code can be found at https://github.com/jmburke1/promptsanitizer.  The point here, though, is to demonstrate attaching the command line debugger to an actual gradle spawned run.  Basically, it's a few extra gradle arguments and the attach argument to jdb.
